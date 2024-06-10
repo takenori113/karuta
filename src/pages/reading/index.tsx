@@ -2,27 +2,54 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
+import useSound from "use-sound";
 
 type KarutaCard = { sentence: string; image: string; voice?: string };
-const karetaCards: KarutaCard[] = [
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/e.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/hi.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ho.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ku.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/mo.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ne.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/re.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/se.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/u.jpg" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/yu.jpg" },
+const karutaCards: KarutaCard[] = [
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/e.jpg", voice: "/e.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/hi.jpg", voice: "/hi.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ho.jpg", voice: "/ho.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ku.jpg", voice: "/ku.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/mo.jpg", voice: "/mo.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ne.jpg", voice: "/ne.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/re.jpg", voice: "/re.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/se.jpg", voice: "/se.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/u.jpg", voice: "/u.m4a" },
+  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/yu.jpg", voice: "/yu.m4a" },
 ];
+
 type Phase = "question" | "answer" | "beforeStart";
 
 const ReadingMode: React.FC = () => {
   const [phase, setPhase] = useState<Phase>("beforeStart");
   const [questionNum, setQuestionNum] = useState<number>(0);
   const [questionOrder, setQuestionOrder] = useState<number[]>([]);
+
+  // useSoundフックを使って各音声を再生するための関数を取得
+  const [playE] = useSound("/e.m4a");
+  const [playHi] = useSound("/hi.m4a");
+  const [playHo] = useSound("/ho.m4a");
+  const [playKu] = useSound("/ku.m4a");
+  const [playMo] = useSound("/mo.m4a");
+  const [playNe] = useSound("/ne.m4a");
+  const [playRe] = useSound("/re.m4a");
+  const [playSe] = useSound("/se.m4a");
+  const [playU] = useSound("/u.m4a");
+  const [playYu] = useSound("/yu.m4a");
+
+  // 各音声の再生関数を配列にまとめる
+  const playSounds = [
+    playE,
+    playHi,
+    playHo,
+    playKu,
+    playMo,
+    playNe,
+    playRe,
+    playSe,
+    playU,
+    playYu,
+  ];
 
   const getRandomArray = () => {
     const numbers = Array.from({ length: 10 }, (_, i) => i);
@@ -32,11 +59,13 @@ const ReadingMode: React.FC = () => {
     }
     return numbers;
   };
-  useEffect(() => {}, []);
 
   const handleStartReading = () => {
-    setQuestionOrder(getRandomArray());
+    const order = getRandomArray();
+    setQuestionOrder(order);
+    setQuestionNum(0); // 最初の質問のインデックスを0に設定
     setPhase("question");
+    playSounds[order[0]](); // 最初の音声を再生
   };
 
   const switchPhase = () => {
@@ -44,8 +73,14 @@ const ReadingMode: React.FC = () => {
       setPhase("answer");
     } else if (phase === "answer") {
       const nextQuestionNum = questionNum + 1;
-      setQuestionNum(nextQuestionNum);
-      setPhase("question");
+      if (nextQuestionNum < karutaCards.length) {
+        setQuestionNum(nextQuestionNum);
+        setPhase("question");
+        playSounds[questionOrder[nextQuestionNum]](); // 次の音声を再生
+      } else {
+        // 全ての質問が終わったら、リセットまたは終了
+        setPhase("beforeStart");
+      }
     }
   };
 
@@ -55,15 +90,13 @@ const ReadingMode: React.FC = () => {
       {phase === "answer" ? (
         <div>
           <Image
-            src={karetaCards[questionOrder[questionNum]].image}
+            src={karutaCards[questionOrder[questionNum]].image}
             alt="Top Image"
             height={400}
             width={400}
           />
         </div>
-      ) : (
-        <></>
-      )}
+      ) : null}
 
       {phase === "beforeStart" ? (
         <button
@@ -72,18 +105,14 @@ const ReadingMode: React.FC = () => {
         >
           読み上げスタート
         </button>
-      ) : (
-        <></>
-      )}
+      ) : null}
 
-      {/* 読み上げ中の状態表示 */}
       {phase === "answer" ? (
         <div className="mt-4">
-          <p>{karetaCards[0].sentence}</p>
+          <p>{karutaCards[questionOrder[questionNum]].sentence}</p>
         </div>
-      ) : (
-        ""
-      )}
+      ) : null}
+
       {phase !== "beforeStart" ? (
         <button
           className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4"
@@ -91,9 +120,8 @@ const ReadingMode: React.FC = () => {
         >
           次へ
         </button>
-      ) : (
-        <></>
-      )}
+      ) : null}
+
       <Link href="/"></Link>
     </div>
   );
