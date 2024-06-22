@@ -2,54 +2,89 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import useSound from "use-sound";
 
-type KarutaCard = { sentence: string; image: string; voice?: string };
+type KarutaCard = { sentence: string; image: string; voice: string };
 const karutaCards: KarutaCard[] = [
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/e.jpg", voice: "/e.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/hi.jpg", voice: "/hi.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ho.jpg", voice: "/ho.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ku.jpg", voice: "/ku.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/mo.jpg", voice: "/mo.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/ne.jpg", voice: "/ne.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/re.jpg", voice: "/re.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/se.jpg", voice: "/se.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/u.jpg", voice: "/u.m4a" },
-  { sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎", image: "/yu.jpg", voice: "/yu.m4a" },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/e.jpg",
+    voice: "/e.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/hi.jpg",
+    voice: "/hi.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/ho.jpg",
+    voice: "/ho.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/ku.jpg",
+    voice: "/ku.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/mo.jpg",
+    voice: "/mo.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/ne.jpg",
+    voice: "/ne.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/re.jpg",
+    voice: "/re.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/se.jpg",
+    voice: "/se.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/u.jpg",
+    voice: "/u.m4a",
+  },
+  {
+    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
+    image: "/yu.jpg",
+    voice: "/yu.m4a",
+  },
 ];
 
 type Phase = "question" | "answer" | "beforeStart";
+type Mode = "manual" | "auto";
 
 const ReadingMode: React.FC = () => {
   const [phase, setPhase] = useState<Phase>("beforeStart");
   const [questionNum, setQuestionNum] = useState<number>(0);
-  const [questionOrder, setQuestionOrder] = useState<number[]>([]);
+  const [mode, setMode] = useState<Mode>("auto");
+  let order:number[] = [];
 
-  // useSoundフックを使って各音声を再生するための関数を取得
-  const [playE] = useSound("/e.m4a");
-  const [playHi] = useSound("/hi.m4a");
-  const [playHo] = useSound("/ho.m4a");
-  const [playKu] = useSound("/ku.m4a");
-  const [playMo] = useSound("/mo.m4a");
-  const [playNe] = useSound("/ne.m4a");
-  const [playRe] = useSound("/re.m4a");
-  const [playSe] = useSound("/se.m4a");
-  const [playU] = useSound("/u.m4a");
-  const [playYu] = useSound("/yu.m4a");
+  const repeatableAudio = async (iteration: number, filePath: string) => {
+    const audio = new Audio(filePath);
+    return new Promise<void>((resolve) => {
+      audio.play();
+      audio.onended = () => {
+        if (iteration > 1) {
+          repeatableAudio(iteration - 1, filePath).then(resolve);
+        } else {
+          resolve();
+        }
+      };
+    });
+  };
 
-  // 各音声の再生関数を配列にまとめる
-  const playSounds = [
-    playE,
-    playHi,
-    playHo,
-    playKu,
-    playMo,
-    playNe,
-    playRe,
-    playSe,
-    playU,
-    playYu,
-  ];
+  const sleep = (time: number) => {
+    return new Promise((resolve) => {
+      setTimeout(resolve, time);
+    });
+  };
 
   const getRandomArray = () => {
     const numbers = Array.from({ length: 10 }, (_, i) => i);
@@ -60,25 +95,37 @@ const ReadingMode: React.FC = () => {
     return numbers;
   };
 
-  const handleStartReading = () => {
-    const order = getRandomArray();
-    setQuestionOrder(order);
-    setQuestionNum(0); // 最初の質問のインデックスを0に設定
-    setPhase("question");
-    playSounds[order[0]](); // 最初の音声を再生
+  const handleStartReading = async () => {
+    order = getRandomArray()
+    setQuestionNum(0);
+    const nextPhase = "question";
+
+    setPhase(c => c = nextPhase);
+    console.log(phase);
+
+    await repeatableAudio(2, karutaCards[order[0]].voice);
+    await switchPhase();
+    await switchPhase();
+    console.log("実行したで");
   };
 
-  const switchPhase = () => {
+  const switchPhase = async () => {
+    console.log("if前")
     if (phase === "question") {
+      console.log("くえっしょん");
       setPhase("answer");
+      await sleep(1000);
     } else if (phase === "answer") {
+      console.log("あんさー");
       const nextQuestionNum = questionNum + 1;
       if (nextQuestionNum < karutaCards.length) {
         setQuestionNum(nextQuestionNum);
+        console.log(questionNum);
         setPhase("question");
-        playSounds[questionOrder[nextQuestionNum]](); // 次の音声を再生
+        await repeatableAudio(2, karutaCards[order[questionNum]].voice); // 次の音声を再生
       } else {
         // 全ての質問が終わったら、リセットまたは終了
+        console.log("それ以外");
         setPhase("beforeStart");
       }
     }
@@ -90,7 +137,7 @@ const ReadingMode: React.FC = () => {
       {phase === "answer" ? (
         <div>
           <Image
-            src={karutaCards[questionOrder[questionNum]].image}
+            src={karutaCards[order[questionNum]].image}
             alt="Top Image"
             height={400}
             width={400}
@@ -109,7 +156,7 @@ const ReadingMode: React.FC = () => {
 
       {phase === "answer" ? (
         <div className="mt-4">
-          <p>{karutaCards[questionOrder[questionNum]].sentence}</p>
+          <p>{karutaCards[order[questionNum]].sentence}</p>
         </div>
       ) : null}
 
