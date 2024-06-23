@@ -10,7 +10,8 @@ const Home: React.FC = () => (
     <Header />
     
     {/* 読み上げモードのセクション */}
-    <ReadingMode />
+    <ReadingMode buttonText='読み上げモード（自動）' />
+    <ReadingMode buttonText='読み上げモード（手動）' />
     
     {/* テストフォームのセクション */}
     <TestForm />
