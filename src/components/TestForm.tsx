@@ -22,7 +22,7 @@ const TestForm: React.FC = () => {
           className="border-solid border-2 border-indigo-600 py-2 px-4 rounded"
           onClick={handleClick}
         >
-          スタート
+          はじめる
         </button>
       </form>
     </div>

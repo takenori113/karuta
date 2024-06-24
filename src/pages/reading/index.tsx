@@ -1,77 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-type KarutaCard = { sentence: string; image: string; voice: string };
-const karutaCards: KarutaCard[] = [
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/e.jpg",
-    voice: "/e.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/hi.jpg",
-    voice: "/hi.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/ho.jpg",
-    voice: "/ho.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/ku.jpg",
-    voice: "/ku.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/mo.jpg",
-    voice: "/mo.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/ne.jpg",
-    voice: "/ne.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/re.jpg",
-    voice: "/re.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/se.jpg",
-    voice: "/se.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/u.jpg",
-    voice: "/u.m4a",
-  },
-  {
-    sentence: "生まれは、神田駿河台、わんぱく小僧の剛太郎",
-    image: "/yu.jpg",
-    voice: "/yu.m4a",
-  },
-];
+import { karutaCards } from "@/karuta/karuta";
 
 type Phase = "question" | "answer" | "beforeStart" | "complete";
-type Mode = "manual" | "auto";
-
-const playAudio = async (filePath: string, iteration: number) => {
-  const audio = new Audio(filePath);
-  return new Promise<void>((resolve) => {
-    audio.play();
-    audio.onended = () => {
-      if (iteration > 1) {
-        playAudio(filePath, iteration - 1).then(resolve);
-      } else {
-        resolve();
-      }
-    };
-  });
-};
 
 const sleep = (time: number) => {
   return new Promise((resolve) => {
@@ -84,7 +16,29 @@ const ReadingMode: React.FC = () => {
   const [questionNum, setQuestionNum] = useState<number>(0);
   const [questionOrder, setQuestionOrder] = useState<number[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [mode, setMode] = useState<Mode>("auto");
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [readingCount, setReadingCount] = useState<number>(2);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null); //これにより、現在再生されているaudioElementを操作する
+
+  const playAudio = async (filePath: string, iteration: number) => {
+    const audio = new Audio(filePath);
+    return new Promise<void>((resolve) => {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(filePath);
+      } else {
+        audioRef.current.src = filePath;
+      }
+      audioRef.current.play();
+      audioRef.current.onended = () => {
+        if (iteration > 1) {
+          playAudio(filePath, iteration - 1).then(resolve);
+        } else {
+          resolve();
+        }
+      };
+    });
+  };
 
   const getRandomArray = () => {
     const numbers = Array.from({ length: 10 }, (_, i) => i);
@@ -107,12 +61,16 @@ const ReadingMode: React.FC = () => {
     const playNextCard = async () => {
       if (phase === "question" && questionOrder.length > 0) {
         setIsPlaying(true);
-        await playAudio(karutaCards[questionOrder[questionNum]].voice, 2);
+        await playAudio(
+          karutaCards[questionOrder[questionNum]].voice,
+          readingCount
+        );
         setIsPlaying(false);
         setPhase("answer");
       } else if (phase === "answer") {
         // 画像を一定時間表示
         await sleep(3000); // 3秒表示
+        if (isPaused) return;
         const nextQuestionNum = questionNum + 1;
         if (nextQuestionNum < karutaCards.length) {
           setQuestionNum(nextQuestionNum);
@@ -123,25 +81,31 @@ const ReadingMode: React.FC = () => {
       }
     };
 
-    if (phase === "question" || phase === "answer") {
+    if ((phase === "question" || phase === "answer") && isPaused === false) {
       playNextCard();
     }
-  }, [phase, questionNum, questionOrder]);
+  }, [phase, questionNum, questionOrder, isPaused]);
+
+  const handlePauseResume = () => {
+    setIsPaused(!isPaused);
+  };
+
+  const handleReadingCountChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setReadingCount(Number(event.target.value));
+  };
 
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-6">読み上げモード（自動）</h1>
-      {phase === "answer" && (
-        <div>
-          <Image
-            src={karutaCards[questionOrder[questionNum]].image}
-            alt="Karuta Image"
-            className="w-2/3"
-            width={400}
-            height={400}
-          />
-        </div>
-      )}
+      <h1 className="text-4xl font-bold mb-6">{`読み上げモード`}</h1>
+      <div>
+        {phase !== "beforeStart" && phase !== "complete" && (
+          <h2 className="text-3xl font-bold mb-6">{`${
+            questionOrder.length
+          }枚中、${questionNum + 1}枚目`}</h2>
+        )}
+      </div>
 
       {phase === "beforeStart" && (
         <button
@@ -172,16 +136,67 @@ const ReadingMode: React.FC = () => {
 
       {phase !== "beforeStart" && phase !== "complete" && (
         <button
-          className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4"
+          className={
+            !isPlaying
+              ? "border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4"
+              : "border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4 opacity-50"
+          }
           onClick={() => setPhase("answer")}
           disabled={isPlaying}
         >
           次へ
         </button>
       )}
-      <div>
-        <Link href="/">ホームに戻る</Link>
+      {phase !== "beforeStart" && phase !== "complete" && (
+        <button
+          className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4 ml-8"
+          onClick={handlePauseResume}
+        >
+          {isPaused ? "再開" : "一時停止"}
+        </button>
+      )}
+      <Link
+        href="/"
+        className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4 ml-8"
+      >
+        ホームに戻る
+      </Link>
+      <div className="mb-4">
+        <label className="mr-4">
+          <input
+            type="radio"
+            name="readingCount"
+            value="1"
+            checked={readingCount === 1}
+            onChange={handleReadingCountChange}
+          />
+          1回読み
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="readingCount"
+            value="2"
+            checked={readingCount === 2}
+            onChange={handleReadingCountChange}
+          />
+          2回読み
+        </label>
       </div>
+      <div className="mt-2">
+        <p>※音声再生中に一時停止をすると、音声再生後に一時停止になります。</p>
+      </div>
+      {phase === "answer" && (
+        <div>
+          <Image
+            src={karutaCards[questionOrder[questionNum]].image}
+            alt="Karuta Image"
+            className="w-1/3"
+            width={200}
+            height={200}
+          />
+        </div>
+      )}
     </div>
   );
 };
