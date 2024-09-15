@@ -88,7 +88,7 @@ const ReadingMode: React.FC = () => {
         ホームに戻る
       </Link>
       {phase === "answer" && (
-        <div className="mt-4 text-3xl text-red-600">
+        <div className="mt-4 text-2xl text-red-600">
           <p>{karutaCards[questionOrder[questionNum]].sentence}</p>
         </div>
       )}
