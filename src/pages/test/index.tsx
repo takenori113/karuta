@@ -52,7 +52,7 @@ const ReadingMode: React.FC = () => {
 
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-4xl font-bold mb-6">{`テストモード`}</h1>
+      <h1 className="text-4xl font-bold mb-6">{`覚えようモード`}</h1>
       <div>
         {phase !== "beforeStart" && phase !== "complete" && (
           <h2 className="text-3xl font-bold mb-6">{`${
@@ -88,7 +88,7 @@ const ReadingMode: React.FC = () => {
         ホームに戻る
       </Link>
       {phase === "answer" && (
-        <div className="mt-4">
+        <div className="mt-4 text-3xl text-red-600">
           <p>{karutaCards[questionOrder[questionNum]].sentence}</p>
         </div>
       )}
