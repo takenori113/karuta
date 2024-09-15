@@ -155,12 +155,6 @@ const ReadingMode: React.FC = () => {
           {isPaused ? "再開" : "一時停止"}
         </button>
       )}
-      <Link
-        href="/"
-        className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4 ml-8"
-      >
-        ホームに戻る
-      </Link>
       <div className="mb-4">
         <label className="mr-4">
           <input
@@ -197,6 +191,14 @@ const ReadingMode: React.FC = () => {
           />
         </div>
       )}
+      <div className="mt-8">
+        <Link
+          href="/"
+          className="border-solid border-2 border-indigo-600 py-2 px-4 rounded mb-4 ml-8"
+        >
+          ホームに戻る
+        </Link>
+      </div>
     </div>
   );
 };
